@@ -45,11 +45,15 @@
    
    */
 
+// hooks
+add_filter('the_content', 'blogroll_links_text', 2);
+add_shortcode('blogroll-links', 'blogroll_links_handler');
+add_action('admin_menu', 'blogroll_links_admin');
 
 
-function blogroll_links_html($category_id, $sort_by, $sort_order) 
-{
-	$bm = get_bookmarks( array(
+function blogroll_links_html($category_id, $sort_by, $sort_order){
+  
+  $bm = get_bookmarks( array(
             'orderby'        => $sort_by, 
             'order'          => $sort_order,
             'limit'          => -1, 
@@ -61,8 +65,8 @@ function blogroll_links_html($category_id, $sort_by, $sort_order)
             'exclude'        => null,
             'search'         => '.'));
 
-      $links .= '<ul class="blogroll">';
-      foreach ($bm as $bookmark) {
+  $links .= '<ul class="blogroll">';
+  foreach ($bm as $bookmark) {
 
 		$rel_string = $bookmark->link_rel;
 		$rel_tag_part = (strlen($rel_string) > 0) ? ' rel="' . $rel_string . '"' : '';
@@ -76,20 +80,20 @@ function blogroll_links_html($category_id, $sort_by, $sort_order)
     $attach_id = get_attachment_id($bookmark->link_image);
     $image_tag = wp_get_attachment_image( $attach_id, 'thumbnail' );
 
-     $links .= sprintf(
-       '<li><a href="%s"%s%s><div class="thumb">%s</div><span class="text">%s</span></a>%s</li>',
-       $bookmark->link_url,
-       $rel_tag_part,
-       $target_tag_part,
-       $image_tag,
-       $bookmark->link_name,
-       $description_tag
-     );
+   $links .= sprintf(
+     '<li><a href="%s"%s%s><div class="thumb">%s</div><span class="text">%s</span></a>%s</li>',
+     $bookmark->link_url,
+     $rel_tag_part,
+     $target_tag_part,
+     $image_tag,
+     $bookmark->link_name,
+     $description_tag
+   );
 
-     }
-     $links .= '</ul>';
+  }
+  $links .= '</ul>';
  
-     $links .= '
+  $links .= '
 <style>
   ul.blogroll{ margin: 0; margin-bottom: 30px;}
   ul.blogroll li{ width: 100%; list-style-type: none; background: #333; border: 3px solid #333; padding: 3px; margin: 5px 0; transition: background 0.3s; }
@@ -100,107 +104,106 @@ function blogroll_links_html($category_id, $sort_by, $sort_order)
   ul.blogroll .text{ display: table-cell; vertical-align: middle; width: 100%; }
 </style>
        ';
-
-      }
-      $links .= '</ul>';
     
-      return $links;
+  return $links;
 }
 
-  function blogroll_links_handler($atts) {
-        
-    $attributes = shortcode_atts(array(
-        'categoryslug' => get_option('blogroll_links_default_category_slug'),
-        'sortby'       => get_option('blogroll_links_default_sort_by'),
-        'sortorder'    => get_option('blogroll_links_default_sort_order'),
-        'debug'        => '0',
-    ), $atts);
+function blogroll_links_handler($atts) {
+      
+  $attributes = shortcode_atts(array(
+      'categoryslug' => get_option('blogroll_links_default_category_slug'),
+      'sortby'       => get_option('blogroll_links_default_sort_by'),
+      'sortorder'    => get_option('blogroll_links_default_sort_order'),
+      'debug'        => '0',
+  ), $atts);
 
 
-	$category_slug = $attributes['categoryslug'];
+  $category_slug = $attributes['categoryslug'];
     $sort_by       = $attributes['sortby'];
     $sort_order    = $attributes['sortorder'];
     $debug         = $attributes['debug'];
 
   $term = get_term_by('slug', $category_slug, 'link_category');	
 
+  // error_log(var_export($results, true));
+    
+  $links = blogroll_links_html($term->term_id, $sort_by, $sort_order);               
+  return $links;
+  
+}
+
+
+  
+  
+// Replaces the <!--blogroll-links--> tag and its contents with the blogroll links
+// This function supports a previous (now deprecated) syntax
+function blogroll_links_text($text){
+  
+    global $wpdb, $table_prefix;
+    
+    // Only perform plugin functionality if post/page contains <!-- show-blogroll-links -->
+    while (preg_match("{<!--blogroll-links\b(.*?)-->.*?<!--/blogroll-links-->}", $text, $matches)) {
+        // to contain the XHTML code that contains the links returned
+        $links = '';
+        
+        $tmp = get_option('blogroll_links_default_category_slug');
+        $category_slug = (strlen($tmp) > 0) ? $tmp : 'blogroll';
+        
+        $tmp = get_option('blogroll_links_default_sort_by');
+        $sort_by = (strlen($tmp) > 0) ? $tmp : 'link_name';
+        
+        $tmp = get_option('blogroll_links_default_sort_order');
+        $sort_order = (strlen($tmp) > 0) ? $tmp : '';
+        
+        $attributes = $matches[1];
+        
+        if (preg_match("{\bcategory-slug\b=\"(.*?)\"}", $attributes, $matches)) {
+            $category_slug = $matches[1];
+        }
+        
+        if (preg_match("{\bsort-by\b=\"(.*?)\"}", $attributes, $matches)) {
+            $sort_by = $matches[1];
+        }
+        
+        if (preg_match("{\bsort-order\b=\"(.*?)\"}", $attributes, $matches)) {
+            $sort_order = $matches[1];
+        }
+        
+
+	$sql = sprintf("SELECT term_id FROM wp_terms WHERE slug = '%s' LIMIT 1", $category_slug);
+    $results = $wpdb->get_results($sql);
+	$category_id = $results[0]->term_id;
+
 	// error_log(var_export($results, true));
-      
-    $links = blogroll_links_html($term->term_id, $sort_by, $sort_order);               
-    return $links;
-  }
 
+    $links = blogroll_links_html($category_id, $sort_by, $sort_order);               
 
-  
-  
-  // Replaces the <!--blogroll-links--> tag and its contents with the blogroll links
-  // This function supports a previous (now deprecated) syntax
-  function blogroll_links_text($text)
-  {
-      global $wpdb, $table_prefix;
-      
-      // Only perform plugin functionality if post/page contains <!-- show-blogroll-links -->
-      while (preg_match("{<!--blogroll-links\b(.*?)-->.*?<!--/blogroll-links-->}", $text, $matches)) {
-          // to contain the XHTML code that contains the links returned
-          $links = '';
-          
-          $tmp = get_option('blogroll_links_default_category_slug');
-          $category_slug = (strlen($tmp) > 0) ? $tmp : 'blogroll';
-          
-          $tmp = get_option('blogroll_links_default_sort_by');
-          $sort_by = (strlen($tmp) > 0) ? $tmp : 'link_name';
-          
-          $tmp = get_option('blogroll_links_default_sort_order');
-          $sort_order = (strlen($tmp) > 0) ? $tmp : '';
-          
-          $attributes = $matches[1];
-          
-          if (preg_match("{\bcategory-slug\b=\"(.*?)\"}", $attributes, $matches)) {
-              $category_slug = $matches[1];
-          }
-          
-          if (preg_match("{\bsort-by\b=\"(.*?)\"}", $attributes, $matches)) {
-              $sort_by = $matches[1];
-          }
-          
-          if (preg_match("{\bsort-order\b=\"(.*?)\"}", $attributes, $matches)) {
-              $sort_order = $matches[1];
-          }
-          
-
-		$sql = sprintf("SELECT term_id FROM wp_terms WHERE slug = '%s' LIMIT 1", $category_slug);
-	    $results = $wpdb->get_results($sql);
-		$category_id = $results[0]->term_id;
-
-		// error_log(var_export($results, true));
-
-	    $links = blogroll_links_html($category_id, $sort_by, $sort_order);               
-
-          
-          // by default preg_replace replaces all, so the 4th paramter is set to 1, to only replace once.
-          $text = preg_replace("{<!--blogroll-links\b.*?-->.*?<!--/blogroll-links-->}", $links, $text, 1);
-      }
-      // end while loop
-      
-      return $text;
-  }
-  // end function blogroll_links_text()
+        
+        // by default preg_replace replaces all, so the 4th paramter is set to 1, to only replace once.
+        $text = preg_replace("{<!--blogroll-links\b.*?-->.*?<!--/blogroll-links-->}", $links, $text, 1);
+    }
+    // end while loop
+    
+    return $text;
+}
+// end function blogroll_links_text()
   
   
   
   
   
-  // admin menu
-  function blogroll_links_admin()
-  {
-      if (function_exists('add_options_page')) {
-          add_options_page('Blogroll Links', 'Blogroll Links', 1, basename(__FILE__), 'blogroll_links_admin_panel');
-      }
-  }
+// admin menu
+function blogroll_links_admin(){
+  
+    if (function_exists('add_options_page')) {
+        add_options_page('Blogroll Links', 'Blogroll Links', 1, basename(__FILE__), 'blogroll_links_admin_panel');
+    }
+    
+}
   
   
-  function blogroll_links_admin_panel()
-  {
+function blogroll_links_admin_panel(){
+  
       // Add options if first time running
       add_option('blogroll_links_new_window', 'no', 'Blogroll Links - open links in new window');
       
@@ -251,11 +254,61 @@ function blogroll_links_html($category_id, $sort_by, $sort_order)
   </form>
 </div>
 <?php
-      } // end function blogroll_links_admin_panel()
-      
-      
-      // hooks
-      add_filter('the_content', 'blogroll_links_text', 2);
-      add_shortcode('blogroll-links', 'blogroll_links_handler');
-      add_action('admin_menu', 'blogroll_links_admin');
+} // end function blogroll_links_admin_panel()
+
+
+/**
+ * HELPER: Get an attachment ID given a URL: https://wpscholar.com/blog/get-attachment-id-from-wp-image-url/
+ * 
+ * @param string $url
+ *
+ * @return int Attachment ID on success, 0 on failure
+ */
+function get_attachment_id( $url ) {
+
+	$attachment_id = 0;
+
+	$dir = wp_upload_dir();
+
+	if ( false !== strpos( $url, $dir['baseurl'] . '/' ) ) { // Is URL in uploads directory?
+		$file = basename( $url );
+
+		$query_args = array(
+			'post_type'   => 'attachment',
+			'post_status' => 'inherit',
+			'fields'      => 'ids',
+			'meta_query'  => array(
+				array(
+					'value'   => $file,
+					'compare' => 'LIKE',
+					'key'     => '_wp_attachment_metadata',
+				),
+			)
+		);
+
+		$query = new WP_Query( $query_args );
+
+		if ( $query->have_posts() ) {
+
+			foreach ( $query->posts as $post_id ) {
+
+				$meta = wp_get_attachment_metadata( $post_id );
+
+				$original_file       = basename( $meta['file'] );
+				$cropped_image_files = wp_list_pluck( $meta['sizes'], 'file' );
+
+				if ( $original_file === $file || in_array( $file, $cropped_image_files ) ) {
+					$attachment_id = $post_id;
+					break;
+				}
+
+			}
+
+		}
+
+	}
+
+	return $attachment_id;
+}
+
 ?>
