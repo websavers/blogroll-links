@@ -93,9 +93,7 @@ function blogroll_links_html($category_id, $sort_by, $sort_order)
 }
 
   function blogroll_links_handler($atts) {
-  
-    global $wpdb, $table_prefix;
-      
+        
     $attributes = shortcode_atts(array(
         'categoryslug' => get_option('blogroll_links_default_category_slug'),
         'sortby'       => get_option('blogroll_links_default_sort_by'),
@@ -109,13 +107,11 @@ function blogroll_links_html($category_id, $sort_by, $sort_order)
     $sort_order    = $attributes['sortorder'];
     $debug         = $attributes['debug'];
 
-	$sql = sprintf("SELECT term_id FROM wp_terms WHERE slug = '%s' LIMIT 1", $category_slug);
-    $results = $wpdb->get_results($sql);
-	$category_id = $results[0]->term_id;
+  $term = get_term_by('slug', $category_slug, 'link_category');	
 
 	// error_log(var_export($results, true));
       
-    $links = blogroll_links_html($category_id, $sort_by, $sort_order);               
+    $links = blogroll_links_html($term->term_id, $sort_by, $sort_order);               
     return $links;
   }
 
