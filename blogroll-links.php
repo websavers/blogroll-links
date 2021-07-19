@@ -80,16 +80,16 @@ function blogroll_links_html($category_id, $sort_by, $sort_order){
     $attach_id = get_attachment_id($bookmark->link_image);
     $image_tag = wp_get_attachment_image( $attach_id, 'thumbnail' );
 
-   $links .= sprintf(
-     '<li><a href="%s"%s%s><div class="thumb">%s</div><span class="text">%s</span></a>%s</li>',
-     $bookmark->link_url,
-     $rel_tag_part,
-     $target_tag_part,
-     $image_tag,
-     $bookmark->link_name,
-     $description_tag
-   );
-
+    $links .= sprintf(
+      '<li class="link"><a href="%s"%s%s><div class="thumb">%s</div><div class="text"><div class="title">%s</div><div class="description">%s</div></div></a></li>',
+      $bookmark->link_url,
+      $rel_tag_part,
+      $target_tag_part,
+      $image_tag,
+      $bookmark->link_name,
+      $description_string
+    );
+    
   }
   $links .= '</ul>';
  
@@ -102,6 +102,7 @@ function blogroll_links_html($category_id, $sort_by, $sort_order){
   ul.blogroll li a{ display: table; color: white; text-align:center; height: 50px; vertical-align:middle;}
   ul.blogroll .thumb{ float:left; width: 50px; height: 50px; margin-right: 7px; }
   ul.blogroll .text{ display: table-cell; vertical-align: middle; width: 100%; }
+  ul.blogroll .description{ font-size: 0.8em; }
 </style>
        ';
     
