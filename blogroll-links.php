@@ -207,21 +207,22 @@ function blogroll_links_admin_panel(){
   
       // Add options if first time running
       add_option('blogroll_links_new_window', 'no', 'Blogroll Links - open links in new window');
+      add_option('blogroll_links_default_sort_by', 'post_date', 'Blogroll Links - default sort by');
+      add_option('blogroll_links_default_sort_order', 'DESC', 'Blogroll Links - default sort order');
       
       if (isset($_POST['info_update'])) {
-          // update settings
-          
-          if ($_POST['new-window'] == 'on') {
-              $new = 'yes';
-          } else {
-              $new = 'no';
-          }
-          
-          update_option('blogroll_links_new_window', $new);
-      } else {
-          // load settings from database
-          $new = get_option('blogroll_links_default_category_slug');
-      }
+          // update settings          
+          //update_option('blogroll_links_new_window', ($_POST['new-window'] == 'on')? 'yes':'no' );
+          update_option('blogroll_links_default_sort_by', $_POST['blogroll_links_default_category_slug']);
+          update_option('blogroll_links_default_sort_by', $_POST['blogroll_links_default_sort_by']);
+          update_option('blogroll_links_default_sort_order', $_POST['blogroll_links_default_sort_order']);
+      } 
+      
+      // load settings from database
+      $default_category_slug = get_option('blogroll_links_default_category_slug');
+      $default_sort_by = get_option('blogroll_links_default_sort_by');
+      $default_sort_order = get_option('blogroll_links_default_sort_order');
+
 ?>
 <div class=wrap>
   <form method="post">
@@ -230,21 +231,15 @@ function blogroll_links_admin_panel(){
     <table class="form-table">
       <tr valign="top">
         <th scope="row"><label for="blogroll_links_default_category_slug">Category Slug</label></th>
-        <td><input class="regular-text" type="text" id="blogroll_links_default_category_slug" name="blogroll_links_default_category_slug" value="<?php
-      checked('yes', $new);
-?>" /></td>
+        <td><input class="regular-text" type="text" id="blogroll_links_default_category_slug" name="blogroll_links_default_category_slug" value="<?php echo $default_category_slug; ?>" /></td>
       </tr>
       <tr valign="top">
         <th scope="row"><label for="blogroll_links_default_sort_by">Sort-By</label></th>
-        <td><input class="regular-text" type="text" id="blogroll_links_default_sort_by" name="blogroll_links_default_sort_by" value="<?php
-      checked('yes', $new);
-?>" /></td>
+        <td><input class="regular-text" type="text" id="blogroll_links_default_sort_by" name="blogroll_links_default_sort_by" value="<?php echo $default_sort_by; ?>" /></td>
       </tr>
       <tr valign="top">
         <th scope="row"><label for="blogroll_links_default_sort_order">Sort Order</label></th>
-        <td><input class="regular-text" type="text" id="blogroll_links_default_sort_order" name="blogroll_links_default_sort_order" value="<?php
-      checked('yes', $new);
-?>" /></td>
+        <td><input class="regular-text" type="text" id="blogroll_links_default_sort_order" name="blogroll_links_default_sort_order" value="<?php echo $default_sort_order; ?>" /></td>
       </tr>
     </table>
     <p class="submit">
